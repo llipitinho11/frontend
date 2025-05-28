@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resultados - Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-700">📊 Resultados</h1>
+    <div class="flex space-x-4">
+      <a href="dashboard.html" class="text-gray-600 hover:text-blue-600">Dashboard</a>
+      <a href="olimpiadas.html" class="text-gray-600 hover:text-blue-600">Olimpíadas</a>
+      <a href="medalhas.html" class="text-gray-600 hover:text-blue-600">Medalhas</a>
+      <a href="resultados.html" class="text-blue-600 font-medium">Resultados</a>
+    </div>
+  </nav>
+
+  <div class="p-6 max-w-7xl mx-auto">
+    <div class="flex border-b mb-6">
+      <button class="tab px-4 py-2 text-blue-600 border-b-2 border-blue-600" onclick="showTab('ano')">Por Ano</button>
+      <button class="tab px-4 py-2 text-gray-600 hover:text-blue-600" onclick="showTab('olimpiada')">Por Olimpíada</button>
+      <button class="tab px-4 py-2 text-gray-600 hover:text-blue-600" onclick="showTab('medalha')">Por Medalha</button>
+    </div>
+
+    <div id="ano" class="tab-content"></div>
+    <div id="olimpiada" class="tab-content hidden"></div>
+    <div id="medalha" class="tab-content hidden"></div>
+  </div>
+
+  <script>
+    const backendURL = 'https://backend-medalhas.onrender.com';
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(tab).classList.remove('hidden');
+
+      document.querySelectorAll('.tab').forEach(btn => {
+        btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+        btn.classList.add('text-gray-600');
+      });
+
+      event.target.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+      event.target.classList.remove('text-gray-600');
+    }
+
+    async function carregarResultados() {
+      const res = await fetch(backendURL + '/medalhas');
+      const medalhas = await res.json();
+
+      const porAno = agruparPor(medalhas, 'ano');
+      const porOlimpiada = agruparPor(medalhas, m => m.olimpiada.nome);
+      const porMedalha = agruparPor(medalhas, 'tipo');
+
+      renderizar('ano', porAno);
+      renderizar('olimpiada', porOlimpiada);
+      renderizar('medalha', porMedalha);
+    }
+
+    function agruparPor(array, chave) {
+      return array.reduce((acc, item) => {
+        const key = typeof chave === 'function' ? chave(item) : item[chave];
+        acc[key] = acc[key] || [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+    }
+
+    function renderizar(containerId, dados) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      for (const grupo in dados) {
+        const box = document.createElement('div');
+        box.className = 'bg-white rounded-2xl shadow p-4 mb-4';
+        box.innerHTML = `<h2 class="text-lg font-semibold mb-2 text-gray-700">${grupo}</h2>
+          <ul class="space-y-1">
+            ${dados[grupo].map(m => `
+              <li class="text-sm text-gray-600">
+                🏅 <strong>${m.olimpiada.nome}</strong> - ${m.ano} - ${m.tipo.toUpperCase()}
+                <a href="${m.certificado}" target="_blank" class="text-blue-600 hover:underline">🔗 Certificado</a>
+              </li>
+            `).join('')}
+          </ul>`;
+        container.appendChild(box);
+      }
+    }
+
+    carregarResultados();
+  </script>
+
+</body>
+</html>

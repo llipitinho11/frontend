@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Medalhas</title>
+
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Ícones Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-700">🏅 Dashboard de Medalhas</h1>
+    <div class="flex space-x-4">
+      <a href="dashboard.html" class="text-blue-600 font-medium">Dashboard</a>
+      <a href="olimpiadas.html" class="text-gray-600 hover:text-blue-600">Olimpíadas</a>
+      <a href="medalhas.html" class="text-gray-600 hover:text-blue-600">Medalhas</a>
+      <a href="resultados.html" class="text-gray-600 hover:text-blue-600">Resultados</a>
+    </div>
+  </nav>
+
+  <!-- Conteúdo -->
+  <div class="p-6 max-w-7xl mx-auto space-y-8">
+
+    <!-- Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white p-6 rounded-2xl shadow flex items-center">
+        <div class="bg-yellow-100 p-3 rounded-full">
+          🥇
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Medalhas de Ouro</p>
+          <p id="ouro-count" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow flex items-center">
+        <div class="bg-gray-200 p-3 rounded-full">
+          🥈
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Medalhas de Prata</p>
+          <p id="prata-count" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow flex items-center">
+        <div class="bg-orange-100 p-3 rounded-full">
+          🥉
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Medalhas de Bronze</p>
+          <p id="bronze-count" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow flex items-center">
+        <div class="bg-blue-100 p-3 rounded-full">
+          🎯
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-gray-500">Total de Medalhas</p>
+          <p id="total-count" class="text-2xl font-bold">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-lg font-semibold mb-4 text-gray-700">Medalhas por Disciplina</h2>
+        <canvas id="disciplinaChart"></canvas>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <h2 class="text-lg font-semibold mb-4 text-gray-700">Medalhas por Ano</h2>
+        <canvas id="anoChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JS -->
+  <script>
+    const backendURL = 'https://backend-medalhas.onrender.com';
+
+    // Fetch medalhas
+    async function fetchMedalhas() {
+      const res = await fetch(backendURL + '/medalhas');
+      const medalhas = await res.json();
+
+      // Contagem
+      const counts = { ouro: 0, prata: 0, bronze: 0, total: 0 };
+      const porDisciplina = {};
+      const porAno = {};
+
+      medalhas.forEach(m => {
+        counts.total++;
+        if (m.tipo === 'ouro') counts.ouro++;
+        if (m.tipo === 'prata') counts.prata++;
+        if (m.tipo === 'bronze') counts.bronze++;
+
+        // Disciplina
+        const disciplina = m.olimpiada.materia || 'Outro';
+        porDisciplina[disciplina] = (porDisciplina[disciplina] || 0) + 1;
+
+        // Ano
+        const ano = m.ano || 'Desconhecido';
+        porAno[ano] = (porAno[ano] || 0) + 1;
+      });
+
+      // Atualizar Cards
+      document.getElementById('ouro-count').innerText = counts.ouro;
+      document.getElementById('prata-count').innerText = counts.prata;
+      document.getElementById('bronze-count').innerText = counts.bronze;
+      document.getElementById('total-count').innerText = counts.total;
+
+      // Gráfico Disciplina
+      new Chart(document.getElementById('disciplinaChart'), {
+        type: 'pie',
+        data: {
+          labels: Object.keys(porDisciplina),
+          datasets: [{
+            data: Object.values(porDisciplina),
+            backgroundColor: ['#facc15','#4ade80','#60a5fa','#f472b6','#c084fc','#f87171']
+          }]
+        }
+      });
+
+      // Gráfico Ano
+      new Chart(document.getElementById('anoChart'), {
+        type: 'bar',
+        data: {
+          labels: Object.keys(porAno),
+          datasets: [{
+            label: 'Medalhas',
+            data: Object.values(porAno),
+            backgroundColor: '#60a5fa'
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
+    fetchMedalhas();
+  </script>
+
+  <!-- Lucide Ícones -->
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medalhas - Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-700">🏅 Medalhas</h1>
+    <div class="flex space-x-4">
+      <a href="dashboard.html" class="text-gray-600 hover:text-blue-600">Dashboard</a>
+      <a href="olimpiadas.html" class="text-gray-600 hover:text-blue-600">Olimpíadas</a>
+      <a href="medalhas.html" class="text-blue-600 font-medium">Medalhas</a>
+    </div>
+  </nav>
+
+  <div class="p-6 max-w-7xl mx-auto space-y-8">
+    <div class="bg-white p-6 rounded-2xl shadow">
+      <h2 class="text-lg font-semibold mb-4 text-gray-700">Adicionar Nova Medalha</h2>
+      <form id="medalha-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <select required name="olimpiada_id" class="p-3 rounded-xl border border-gray-300">
+          <option value="">Selecione a Olimpíada</option>
+        </select>
+        <input required name="ano" type="number" placeholder="Ano" class="p-3 rounded-xl border border-gray-300" />
+        <select required name="tipo" class="p-3 rounded-xl border border-gray-300">
+          <option value="">Tipo de Medalha</option>
+          <option value="ouro">🥇 Ouro</option>
+          <option value="prata">🥈 Prata</option>
+          <option value="bronze">🥉 Bronze</option>
+          <option value="honra">🎖️ Honra ao Mérito</option>
+          <option value="participacao">📜 Participação</option>
+        </select>
+        <input required name="certificado" type="file" accept="application/pdf,image/*" class="p-3 rounded-xl border border-gray-300" />
+        <button type="submit" class="md:col-span-4 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition">
+          ➕ Adicionar
+        </button>
+      </form>
+    </div>
+
+    <div>
+      <h2 class="text-xl font-semibold text-gray-700 mb-4">Medalhas Cadastradas</h2>
+      <div id="medalhas-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </div>
+
+  <script>
+    const backendURL = 'https://backend-medalhas.onrender.com';
+    const supabaseURL = 'https://<YOUR_SUPABASE_URL>.supabase.co';
+    const supabaseKey = '<YOUR_SUPABASE_PUBLIC_ANON_KEY>';
+    const bucket = 'certificados';
+
+    const selectOlimpiada = document.querySelector('select[name="olimpiada_id"]');
+
+    async function carregarOlimpiadas() {
+      const res = await fetch(backendURL + '/olimpiadas');
+      const olimpiadas = await res.json();
+      selectOlimpiada.innerHTML = '<option value="">Selecione a Olimpíada</option>';
+      olimpiadas.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.nome;
+        selectOlimpiada.appendChild(opt);
+      });
+    }
+
+    async function carregarMedalhas() {
+      const res = await fetch(backendURL + '/medalhas');
+      const medalhas = await res.json();
+      const list = document.getElementById('medalhas-list');
+      list.innerHTML = '';
+      medalhas.forEach(m => {
+        const icon = {
+          ouro: 'circle', prata: 'circle', bronze: 'circle',
+          honra: 'award', participacao: 'file-text',
+        }[m.tipo] || 'award';
+
+        const color = {
+          ouro: 'text-yellow-500', prata: 'text-gray-400',
+          bronze: 'text-amber-600', honra: 'text-purple-500',
+          participacao: 'text-blue-500',
+        }[m.tipo] || 'text-blue-500';
+
+        const card = document.createElement('div');
+        card.className = 'bg-white p-6 rounded-2xl shadow flex flex-col items-center text-center';
+        card.innerHTML = `
+          <i data-lucide="${icon}" class="w-8 h-8 ${color}"></i>
+          <h3 class="text-lg font-bold text-gray-700 mt-2">${m.olimpiada.nome}</h3>
+          <p class="text-sm text-gray-500">${m.ano}</p>
+          <p class="mt-2 font-medium capitalize">${m.tipo}</p>
+          <a href="${m.certificado}" target="_blank" class="mt-2 text-blue-600 hover:underline">🔗 Certificado</a>
+          <div class="flex space-x-3 mt-4">
+            <button onclick="removerMedalha(${m.id})" class="bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200">
+              <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    carregarOlimpiadas();
+    carregarMedalhas();
+
+    const form = document.getElementById('medalha-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      const file = formData.get('certificado');
+      const filename = Date.now() + '-' + file.name;
+      const { data: uploadData, error } = await fetch(`${supabaseURL}/storage/v1/object/${bucket}/${filename}`, {
+        method: 'POST',
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` },
+        body: file
+      });
+
+      if (error) {
+        alert('Erro no upload do certificado');
+        return;
+      }
+
+      const certificadoURL = `${supabaseURL}/storage/v1/object/public/${bucket}/${filename}`;
+
+      const data = {
+        olimpiada_id: formData.get('olimpiada_id'),
+        ano: formData.get('ano'),
+        tipo: formData.get('tipo'),
+        certificado: certificadoURL
+      };
+
+      await fetch(backendURL + '/medalhas', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+
+      form.reset();
+      carregarMedalhas();
+    });
+
+    async function removerMedalha(id) {
+      const confirmar = confirm('Deseja remover esta medalha?');
+      if (!confirmar) return;
+      await fetch(backendURL + '/medalhas/' + id, {method: 'DELETE'});
+      carregarMedalhas();
+    }
+  </script>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>
