@@ -31,7 +31,15 @@
       <h2 class="text-lg font-semibold mb-4 text-gray-700">Adicionar Nova Olimpíada</h2>
       <form id="olimpiada-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input required name="nome" type="text" placeholder="Nome da Olimpíada" class="p-3 rounded-xl border border-gray-300" />
-        <input required name="materia" type="text" placeholder="Matéria (Ex: Matemática)" class="p-3 rounded-xl border border-gray-300" />
+                <select required name="materia"p-3 rounded-xl border border-gray-300">
+  <option value="">Selecione a Categoria</option>
+  <option value="matematica">Matemática</option>
+  <option value="exatas">Ciências Exatas</option>
+  <option value="astronomia">Astronomia e Foguetes</option>
+  <option value="linguagens">Linguagens</option>
+  <option value="humanas">Ciências Humanas</option>
+  <option value="interdisciplinares">Interdisciplinares</option>
+</select>
         <input required name="logo" type="url" placeholder="URL da Logo" class="p-3 rounded-xl border border-gray-300" />
         <button type="submit" class="md:col-span-3 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition">
           ➕ Adicionar
